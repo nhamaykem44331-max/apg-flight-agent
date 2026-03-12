@@ -8,98 +8,69 @@
     html,body{margin:0;padding:0}
     body{font-family:Arial,sans-serif;background:#f7f0e6;color:#4b3b2b}
     .page{max-width:1000px;margin:0 auto;padding:16px}
-
     .brand,.footer{display:flex;justify-content:space-between;align-items:center;gap:12px;background:linear-gradient(135deg,#d6b77a,#f2e4c7);color:#4b3b2b;border-radius:12px;padding:12px 14px}
     .brand{margin-bottom:12px}.footer{margin-top:12px}
     .left{display:flex;align-items:center;gap:10px}
     .logo{width:56px;height:56px;border-radius:10px;object-fit:cover;border:2px solid rgba(255,255,255,.25)}
     .logo-sm{width:36px;height:36px;border-radius:8px;object-fit:cover;border:2px solid rgba(255,255,255,.25)}
-    .title{font-size:20px;font-weight:700;margin:0}
-    .sub{font-size:12px;opacity:.9;margin-top:2px}
-
+    .title{font-size:20px;font-weight:700;margin:0}.sub{font-size:12px;opacity:.9;margin-top:2px}
     .card{background:#fffaf1;border-radius:12px;padding:16px;box-shadow:0 6px 20px rgba(122,92,45,.12)}
-    .row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+    .row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
     input,button{padding:10px;border-radius:8px;border:1px solid #d1d5db;font-size:14px}
     button{background:#c8a96b;color:#3f3122;border:0;cursor:pointer}
-
     table{width:100%;border-collapse:collapse;margin-top:14px}
     th,td{padding:9px;border-bottom:1px solid #e5e7eb;text-align:left;vertical-align:top}
-
     .airline-pill{display:inline-block;padding:6px 10px;border-radius:999px;color:#fff;font-weight:700;font-size:12px;line-height:1}
     .air-vn{background:#0072ce}.air-vj{background:#e53935}.air-qh{background:#1f9d55}.air-vu{background:#f59e0b}.air-zh{background:#0f766e}.air-default{background:#64748b}
-
     .btn-detail{padding:6px 10px;border-radius:8px;background:#b89555;color:#3f3122;border:0;cursor:pointer;font-size:12px}
     .detail-row{background:#fff8ec}
     .detail-box{padding:10px;border:1px solid #ead7b0;border-radius:10px;background:#fffdf8}
     .detail-title{font-weight:700;margin-bottom:8px}
-    .seg{padding:8px;border-bottom:1px dashed #e5e7eb}
-    .seg:last-child{border-bottom:0}
+    .seg{padding:8px;border-bottom:1px dashed #e5e7eb}.seg:last-child{border-bottom:0}
     .lay{display:inline-block;margin-top:6px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:999px;padding:4px 8px;font-size:12px}
-
-    .muted{font-size:13px;color:#6b7280}
-    .err{color:#b91c1c;font-size:13px}
-
+    .muted{font-size:13px;color:#6b7280}.err{color:#b91c1c;font-size:13px}
     @media (max-width:900px){.row{grid-template-columns:1fr 1fr}}
     @media (max-width:560px){.row{grid-template-columns:1fr}.brand,.footer{flex-direction:column;align-items:flex-start}.page{padding:10px}}
   </style>
 </head>
 <body>
 <div class="page">
-  <div class="brand">
-    <div class="left">
-      <img class="logo" src="./assets/tanphu-apg-logo.jpg" alt="Tan Phu APG Logo" />
-      <div><div class="title">TAN PHU APG</div><div class="sub">AIRLINES AGENT • APG Flight Agent</div></div>
-    </div>
-  </div>
+  <div class="brand"><div class="left"><img class="logo" src="./assets/tanphu-apg-logo.jpg" alt="Tan Phu APG Logo" /><div><div class="title">TAN PHU APG</div><div class="sub">AIRLINES AGENT • APG Flight Agent</div></div></div></div>
 
   <div class="card">
     <h2 style="margin-top:0">✈️ APG Flight Agent</h2>
     <div class="row">
-      <input id="from" value="HAN" placeholder="Điểm đi"/>
-      <input id="to" value="SGN" placeholder="Điểm đến"/>
-      <input id="date" type="date"/>
-      <button onclick="loadLive()">Lấy giá live</button>
+      <input id="from" value="HAN" placeholder="Điểm đi (VD: HAN)"/>
+      <input id="to" value="SGN" placeholder="Điểm đến (VD: SGN)"/>
+      <input id="date" type="date" title="Ngày đi"/>
+      <input id="returnDate" type="date" title="Ngày về (để trống = 1 chiều)"/>
+      <button onclick="loadLive()">Tìm chuyến bay</button>
     </div>
 
-    <p class="muted">Nguồn: Google Flights qua SerpAPI.</p>
+    <p class="muted">Mặc định 1 chiều. Nếu có cả ngày về => hệ thống tự chuyển sang khứ hồi.</p>
     <div id="status" class="muted"></div>
     <div id="error" class="err"></div>
 
     <table>
-      <thead>
-        <tr><th>Hãng</th><th>Chuyến</th><th>Giờ đi</th><th>Giờ đến</th><th>Dừng</th><th>Giá</th><th>Chi tiết</th></tr>
-      </thead>
+      <thead><tr><th>Hãng</th><th>Chuyến</th><th>Giờ đi</th><th>Giờ đến</th><th>Dừng</th><th>Giá</th><th>Chi tiết</th></tr></thead>
       <tbody id="tb"></tbody>
     </table>
   </div>
 
-  <div class="footer">
-    <div class="left"><img class="logo-sm" src="./assets/tanphu-apg-logo.jpg" alt="Tan Phu APG Logo" /><div style="font-size:13px">TAN PHU APG • Airlines Agent</div></div>
-    <div style="font-size:12px">© 2026 TAN PHU APG</div>
-  </div>
+  <div class="footer"><div class="left"><img class="logo-sm" src="./assets/tanphu-apg-logo.jpg" alt="Tan Phu APG Logo" /><div style="font-size:13px">TAN PHU APG • Airlines Agent</div></div><div style="font-size:12px">© 2026 TAN PHU APG</div></div>
 </div>
 
 <script>
-  const d=new Date(); d.setDate(d.getDate()+1); document.getElementById('date').value=d.toISOString().slice(0,10);
-  let currentFlights=[];
-
+  const d = new Date(); d.setDate(d.getDate()+1); document.getElementById('date').value = d.toISOString().slice(0,10);
   function fmt(v){return Number(v||0).toLocaleString('vi-VN')+' ₫'}
   function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]))}
   function airlineClass(name=''){ const n=name.toLowerCase(); if(n.includes('vietnam airlines')) return 'air-vn'; if(n.includes('vietjet')) return 'air-vj'; if(n.includes('bamboo')) return 'air-qh'; if(n.includes('vietravel')) return 'air-vu'; if(n.includes('shenzhen')) return 'air-zh'; return 'air-default'; }
-
-  function toggleDetail(i){
-    const tr = document.getElementById(`detail-${i}`);
-    if(!tr) return;
-    tr.style.display = tr.style.display === 'none' ? 'table-row' : 'none';
-  }
+  function toggleDetail(i){ const tr=document.getElementById(`detail-${i}`); if(!tr) return; tr.style.display = tr.style.display==='none'?'table-row':'none'; }
 
   function detailHtml(f){
     const segSource = (f.segments && f.segments.length) ? f.segments : (f.raw_flights || []);
-
     const segs = segSource.map((s,idx)=>{
-      const isMapped = !!s.from;
-      const airline = isMapped ? s.airline : s.airline;
-      const flightNo = isMapped ? s.flight_number : s.flight_number;
+      const isMapped=!!s.from;
       const from = isMapped ? s.from : (s.departure_airport?.id || '');
       const fromCity = isMapped ? s.from_city : (s.departure_airport?.name || '');
       const to = isMapped ? s.to : (s.arrival_airport?.id || '');
@@ -107,23 +78,10 @@
       const depTime = isMapped ? s.departure_time : (s.departure_airport?.time || '');
       const arrTime = isMapped ? s.arrival_time : (s.arrival_airport?.time || '');
       const durationText = isMapped ? (s.duration_text || '') : (s.duration ? `${Math.floor(s.duration/60)}h ${String(s.duration%60).padStart(2,'0')}m` : '');
-
       const lay = (f.layovers||[])[idx];
-      return `<div class="seg">
-        <div><b>Chặng ${idx+1}:</b> ${esc(airline||'')} ${esc(flightNo||'')}</div>
-        <div>${esc(from)} (${esc(fromCity)}) → ${esc(to)} (${esc(toCity)})</div>
-        <div>Giờ bay: ${esc(depTime)} → ${esc(arrTime)} ${durationText?`| ${esc(durationText)}`:''}</div>
-        ${lay ? `<div class="lay">Chờ nối chuyến tại ${esc(lay.airport || lay.id || '')} ${lay.duration_text?`- ${esc(lay.duration_text)}`:''}</div>` : ''}
-      </div>`;
+      return `<div class="seg"><div><b>Chặng ${idx+1}:</b> ${esc(s.airline||'')} ${esc(s.flight_number||'')}</div><div>${esc(from)} (${esc(fromCity)}) → ${esc(to)} (${esc(toCity)})</div><div>Giờ bay: ${esc(depTime)} → ${esc(arrTime)} ${durationText?`| ${esc(durationText)}`:''}</div>${lay?`<div class="lay">Chờ nối chuyến tại ${esc(lay.airport||lay.id||'')} ${lay.duration_text?`- ${esc(lay.duration_text)}`:''}</div>`:''}</div>`;
     }).join('');
-
-    if(segs) return `<div class="detail-box"><div class="detail-title">Thông tin nối chuyến & thời gian chờ</div>${segs}</div>`;
-
-    if ((f.layovers||[]).length){
-      const waits = (f.layovers||[]).map(l=>`<div class="lay">Chờ tại ${esc(l.airport||l.id||'')} ${l.duration_text?`- ${esc(l.duration_text)}`:''}</div>`).join('');
-      return `<div class="detail-box"><div class="detail-title">Thông tin nối chuyến & thời gian chờ</div>${waits}</div>`;
-    }
-
+    if (segs) return `<div class="detail-box"><div class="detail-title">Thông tin nối chuyến & thời gian chờ</div>${segs}</div>`;
     return '<div class="detail-box">Không có dữ liệu nối chuyến chi tiết cho hành trình này.</div>';
   }
 
@@ -131,28 +89,21 @@
     const from=document.getElementById('from').value.trim().toUpperCase();
     const to=document.getElementById('to').value.trim().toUpperCase();
     const date=document.getElementById('date').value;
+    const returnDate=document.getElementById('returnDate').value;
     document.getElementById('error').textContent='';
     document.getElementById('status').textContent='Đang tải dữ liệu live...';
     document.getElementById('tb').innerHTML='';
+
     try{
-      const r=await fetch(`/api/flights/live?from=${from}&to=${to}&date=${date}`);
-      const data=await r.json();
+      const qs = new URLSearchParams({ from, to, date });
+      if(returnDate) qs.set('returnDate', returnDate);
+      const r = await fetch(`/api/flights/live?${qs.toString()}`);
+      const data = await r.json();
       if(!r.ok) throw new Error(data.error || 'Lỗi không xác định');
-      currentFlights = data.flights || [];
-      document.getElementById('status').textContent=`Nguồn: ${data.source} | Tổng chuyến: ${data.count}`;
 
-      const rows=currentFlights.slice(0,20).map((f,i)=>`<tr>
-        <td><span class="airline-pill ${airlineClass(f.airline)}">${esc(f.airline)}</span></td>
-        <td>${esc(f.flight_number||'')}</td>
-        <td>${esc(f.departure_time||'')}</td>
-        <td>${esc(f.arrival_time||'')}</td>
-        <td>${f.stops}</td>
-        <td>${fmt(f.price)}</td>
-        <td><button class="btn-detail" onclick="toggleDetail(${i})">Xem nối chuyến</button></td>
-      </tr>
-      <tr id="detail-${i}" class="detail-row" style="display:none"><td colspan="7">${detailHtml(f)}</td></tr>`).join('');
-
-      document.getElementById('tb').innerHTML=rows || '<tr><td colspan="7">Không có dữ liệu</td></tr>';
+      document.getElementById('status').textContent = `Nguồn: ${data.source} | Loại vé: ${data.tripType==='roundtrip'?'Khứ hồi':'Một chiều'} | Tổng chuyến: ${data.count}`;
+      const rows = (data.flights||[]).slice(0,20).map((f,i)=>`<tr><td><span class="airline-pill ${airlineClass(f.airline)}">${esc(f.airline)}</span></td><td>${esc(f.flight_number||'')}</td><td>${esc(f.departure_time||'')}</td><td>${esc(f.arrival_time||'')}</td><td>${f.stops}</td><td>${fmt(f.price)}</td><td><button class="btn-detail" onclick="toggleDetail(${i})">Xem nối chuyến</button></td></tr><tr id="detail-${i}" class="detail-row" style="display:none"><td colspan="7">${detailHtml(f)}</td></tr>`).join('');
+      document.getElementById('tb').innerHTML = rows || '<tr><td colspan="7">Không có dữ liệu</td></tr>';
     }catch(e){
       document.getElementById('status').textContent='';
       document.getElementById('error').textContent=e.message;
@@ -161,5 +112,3 @@
 </script>
 </body>
 </html>
-
-
