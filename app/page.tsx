@@ -1,5 +1,5 @@
 ﻿"use client";
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 type Flight = {
@@ -73,8 +73,34 @@ export default function HomePage() {
   const [selectedOutbound, setSelectedOutbound] = useState<Flight | null>(null);
   const [selectedInbound, setSelectedInbound] = useState<Flight | null>(null);
   const [sortMode, setSortMode] = useState<'price' | 'time'>('price');
+  const loadingHints = ['Đang tìm chuyến bay', 'Đang so sánh giá tốt nhất', 'Đang tối ưu hành trình'];
+  const [loadingHintIdx, setLoadingHintIdx] = useState(0);
+  const [loadingDots, setLoadingDots] = useState('');
+
+  
+  useEffect(() => {
+    if (!loading) {
+      setLoadingHintIdx(0);
+      setLoadingDots('');
+      return;
+    }
+
+    const dotTimer = setInterval(() => {
+      setLoadingDots((d) => (d.length >= 3 ? '' : d + '.'));
+    }, 350);
+
+    const hintTimer = setInterval(() => {
+      setLoadingHintIdx((i) => (i + 1) % loadingHints.length);
+    }, 1800);
+
+    return () => {
+      clearInterval(dotTimer);
+      clearInterval(hintTimer);
+    };
+  }, [loading]);
 
   const sortedOneway = useMemo(() => {
+
     const arr = [...results];
     if (sortMode === 'price') arr.sort((a, b) => a.price.amount - b.price.amount);
     else arr.sort((a, b) => +new Date(a.departure.time) - +new Date(b.departure.time));
@@ -210,7 +236,12 @@ export default function HomePage() {
           </div>
 
           <p className="mt-2 text-xs text-slate-500">Mặc định 1 chiều. Chọn ngày về để tìm khứ hồi.</p>
-          {loading && <p className="mt-2 text-sm text-slate-600">Đang tìm chuyến bay...</p>}
+          {loading && (
+            <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-sm text-slate-700 shadow-sm">
+              <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-[#1570ef]" />
+              <span className="font-medium">{loadingHints[loadingHintIdx]}{loadingDots}</span>
+            </div>
+          )}
           {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
           {meta && <p className="mt-2 text-sm text-slate-600">Kết quả: {meta.totalResults} chuyến · {meta.searchTime}s · Nguồn hiển thị: FlyClaw</p>}
 
