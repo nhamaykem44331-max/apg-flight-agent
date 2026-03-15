@@ -162,6 +162,7 @@ export default function HomePage() {
   }
 
   async function search() {
+    const startedAt = Date.now();
     setLoading(true);
     setError('');
     setResults([]);
@@ -350,3 +351,4 @@ export default function HomePage() {
     </main>
   );
 }
+
