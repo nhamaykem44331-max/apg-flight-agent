@@ -1,5 +1,6 @@
 ﻿"use client";
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 type Flight = {
   id: string;
@@ -49,6 +50,7 @@ function durationText(minutes: number) {
 }
 
 export default function HomePage() {
+  const router = useRouter();
   const [from, setFrom] = useState('HAN');
   const [to, setTo] = useState('SGN');
   const [date, setDate] = useState(toYmd(7));
@@ -74,6 +76,31 @@ export default function HomePage() {
   const totalRoundtrip = useMemo(() => {
     return (selectedOutbound?.price.amount || 0) + (selectedInbound?.price.amount || 0);
   }, [selectedOutbound, selectedInbound]);
+
+  function goQuote(outbound: Flight, inbound: Flight) {
+    const payload = {
+      outbound,
+      inbound,
+      adults,
+      children,
+      infants,
+      cabin,
+      search: { from, to, date, returnDate: returnDate || toYmd(10) },
+      createdAt: new Date().toISOString(),
+    };
+    localStorage.setItem('apg_quote_selection', JSON.stringify(payload));
+    router.push('/quote');
+  }
+
+  function onSelectOutbound(f: Flight) {
+    setSelectedOutbound(f);
+    if (selectedInbound) goQuote(f, selectedInbound);
+  }
+
+  function onSelectInbound(f: Flight) {
+    setSelectedInbound(f);
+    if (selectedOutbound) goQuote(selectedOutbound, f);
+  }
 
   async function callSearch(payload: any): Promise<SearchResponse> {
     const r = await fetch('/api/search', {
@@ -168,7 +195,7 @@ export default function HomePage() {
           {tripType === 'roundtrip' ? (
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <div className="rounded-xl border bg-white shadow-sm">
-                <div className="border-b bg-[#ffe7b0] px-3 py-2 font-semibold">Đi: {from} ➜ {to} ({date})</div>
+                <div className="border-b bg-[#f7b500] px-3 py-2 font-semibold text-white">Đi: {from} ➜ {to} ({date})</div>
                 <div className="max-h-[420px] overflow-auto">
                   {outboundResults.map((f) => (
                     <div key={f.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b px-3 py-2 text-sm hover:bg-slate-50">
@@ -177,7 +204,7 @@ export default function HomePage() {
                         <div className="text-xs text-slate-600">{f.airline} {f.flightNumber} · {f.stops === 0 ? 'Bay thẳng' : `${f.stops} điểm dừng`}</div>
                       </div>
                       <div className="font-semibold">{fmt(f.price.amount)}</div>
-                      <button className="rounded bg-[#f4b21f] px-3 py-1 text-white" onClick={() => setSelectedOutbound(f)}>Chọn</button>
+                      <button className={`rounded px-3 py-1 text-white ${selectedOutbound?.id===f.id?"bg-green-600":"bg-[#f4b21f]"}`} onClick={() => onSelectOutbound(f)}>{selectedOutbound?.id===f.id?"Đã chọn":"Chọn"}</button>
                     </div>
                   ))}
                   {!loading && outboundResults.length === 0 && <div className="p-3 text-sm text-slate-500">Không có dữ liệu chiều đi.</div>}
@@ -185,7 +212,7 @@ export default function HomePage() {
               </div>
 
               <div className="rounded-xl border bg-white shadow-sm">
-                <div className="border-b bg-[#d8e9ff] px-3 py-2 font-semibold">Về: {to} ➜ {from} ({returnDate})</div>
+                <div className="border-b bg-[#1570ef] px-3 py-2 font-semibold text-white">Về: {to} ➜ {from} ({returnDate || toYmd(10)})</div>
                 <div className="max-h-[420px] overflow-auto">
                   {inboundResults.map((f) => (
                     <div key={f.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b px-3 py-2 text-sm hover:bg-slate-50">
@@ -194,7 +221,7 @@ export default function HomePage() {
                         <div className="text-xs text-slate-600">{f.airline} {f.flightNumber} · {f.stops === 0 ? 'Bay thẳng' : `${f.stops} điểm dừng`}</div>
                       </div>
                       <div className="font-semibold">{fmt(f.price.amount)}</div>
-                      <button className="rounded bg-[#1967d2] px-3 py-1 text-white" onClick={() => setSelectedInbound(f)}>Chọn</button>
+                      <button className={`rounded px-3 py-1 text-white ${selectedInbound?.id===f.id?"bg-green-600":"bg-[#1967d2]"}`} onClick={() => onSelectInbound(f)}>{selectedInbound?.id===f.id?"Đã chọn":"Chọn"}</button>
                     </div>
                   ))}
                   {!loading && inboundResults.length === 0 && <div className="p-3 text-sm text-slate-500">Không có dữ liệu chiều về.</div>}
@@ -204,7 +231,6 @@ export default function HomePage() {
               {selectedOutbound && selectedInbound && (
                 <div className="md:col-span-2 rounded-lg border bg-[#f7f7f7] p-4">
                   <div className="mb-3 text-lg font-bold">Chi tiết giờ bay & tổng giá vé khứ hồi</div>
-
                   <div className="mb-2 grid grid-cols-[1fr_auto] gap-2 border-b pb-2">
                     <div>
                       <div className="font-semibold">{selectedOutbound.departure.city} ➜ {selectedOutbound.arrival.city}</div>
@@ -229,6 +255,10 @@ export default function HomePage() {
                     <div className="text-base font-bold">Tổng giá vé</div>
                     <div className="text-xl font-black text-red-600">{fmt(Math.round(totalRoundtrip * adults * 1.12))}</div>
                   </div>
+
+                  <button className="mt-4 rounded bg-[#d12d2d] px-4 py-2 font-semibold text-white" onClick={() => goQuote(selectedOutbound, selectedInbound)}>
+                    Sang trang báo giá tổng hợp
+                  </button>
                 </div>
               )}
             </div>
@@ -282,6 +312,3 @@ export default function HomePage() {
     </main>
   );
 }
-
-
-
