@@ -1,19 +1,21 @@
 ﻿{
-  "name": "flight-demo-v2",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "dependencies": {
-    "axios": "^1.13.6",
-    "dotenv": "^17.3.1",
-    "express": "^5.2.1"
-  }
-}
+    "name":  "flight-demo-v2",
+    "version":  "1.0.0",
+    "description":  "",
+    "main":  "index.js",
+    "scripts":  {
+                    "start":  "node server.js",
+                    "postinstall":  "python3 -m pip install -r flyclaw/requirements.txt || python -m pip install -r flyclaw/requirements.txt || py -m pip install -r flyclaw/requirements.txt"
+                },
+    "keywords":  [
 
+                 ],
+    "author":  "",
+    "license":  "ISC",
+    "type":  "commonjs",
+    "dependencies":  {
+                         "axios":  "^1.13.6",
+                         "dotenv":  "^17.3.1",
+                         "express":  "^5.2.1"
+                     }
+}
