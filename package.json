@@ -1,21 +1,28 @@
-﻿{
-    "name":  "flight-demo-v2",
-    "version":  "1.0.0",
-    "description":  "",
-    "main":  "index.js",
+{
+    "name":  "apg-flight-agent",
+    "version":  "2.0.0",
+    "private":  true,
     "scripts":  {
-                    "start":  "node server.js",
+                    "dev":  "next dev",
+                    "build":  "next build",
+                    "start":  "next build \u0026\u0026 next start",
+                    "lint":  "next lint",
                     "postinstall":  "python3 -m pip install -r flyclaw/requirements.txt || python -m pip install -r flyclaw/requirements.txt || py -m pip install -r flyclaw/requirements.txt"
                 },
-    "keywords":  [
-
-                 ],
-    "author":  "",
-    "license":  "ISC",
-    "type":  "commonjs",
     "dependencies":  {
-                         "axios":  "^1.13.6",
-                         "dotenv":  "^17.3.1",
-                         "express":  "^5.2.1"
-                     }
+                         "ioredis":  "^5.8.2",
+                         "next":  "14.2.32",
+                         "react":  "18.3.1",
+                         "react-dom":  "18.3.1",
+                         "uuid":  "^11.1.0"
+                     },
+    "devDependencies":  {
+                            "@types/node":  "^20.19.13",
+                            "@types/react":  "^18.3.24",
+                            "@types/react-dom":  "^18.3.7",
+                            "autoprefixer":  "^10.4.21",
+                            "postcss":  "^8.5.6",
+                            "tailwindcss":  "^3.4.17",
+                            "typescript":  "^5.9.2"
+                        }
 }
