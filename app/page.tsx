@@ -99,10 +99,11 @@ export default function HomePage() {
     try {
       const base = { adults, children, infants, cabin };
 
-      if (tripType === 'roundtrip' && returnDate) {
+      if (tripType === 'roundtrip') {
+        const effectiveReturnDate = returnDate || toYmd(10);
         const [go, back] = await Promise.all([
           callSearch({ ...base, from, to, date, tripType: 'oneway' }),
-          callSearch({ ...base, from: to, to: from, date: returnDate, tripType: 'oneway' }),
+          callSearch({ ...base, from: to, to: from, date: effectiveReturnDate, tripType: 'oneway' }),
         ]);
 
         setOutboundResults(go.results || []);
@@ -164,7 +165,7 @@ export default function HomePage() {
           {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
           {meta && <p className="mt-2 text-sm text-slate-600">Kết quả: {meta.totalResults} chuyến · {meta.searchTime}s · Nguồn hiển thị: FlyClaw</p>}
 
-          {tripType === 'roundtrip' && returnDate ? (
+          {tripType === 'roundtrip' ? (
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <div className="rounded-lg border bg-white">
                 <div className="border-b bg-[#ffe7b0] px-3 py-2 font-semibold">Đi: {from} ➜ {to} ({date})</div>
@@ -281,3 +282,4 @@ export default function HomePage() {
     </main>
   );
 }
+
