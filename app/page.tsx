@@ -1,5 +1,5 @@
 ﻿"use client";
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 type Flight = {
   id: string;
@@ -12,6 +12,11 @@ type Flight = {
   price: { amount: number; currency: string; source: string };
   priceUSD: number;
   sources: string[];
+};
+
+type SearchResponse = {
+  results: Flight[];
+  metadata?: { totalResults: number; searchTime: number };
 };
 
 function airlineClass(name = '') {
@@ -34,6 +39,15 @@ function toYmd(offset = 7) {
   return d.toISOString().slice(0, 10);
 }
 
+function hhmm(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+}
+
+function durationText(minutes: number) {
+  return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, '0')}m`;
+}
+
 export default function HomePage() {
   const [from, setFrom] = useState('HAN');
   const [to, setTo] = useState('SGN');
@@ -47,35 +61,61 @@ export default function HomePage() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
   const [results, setResults] = useState<Flight[]>([]);
   const [detail, setDetail] = useState<Record<string, boolean>>({});
   const [meta, setMeta] = useState<{ totalResults: number; searchTime: number } | null>(null);
+
+  const [outboundResults, setOutboundResults] = useState<Flight[]>([]);
+  const [inboundResults, setInboundResults] = useState<Flight[]>([]);
+  const [selectedOutbound, setSelectedOutbound] = useState<Flight | null>(null);
+  const [selectedInbound, setSelectedInbound] = useState<Flight | null>(null);
+
+  const totalRoundtrip = useMemo(() => {
+    return (selectedOutbound?.price.amount || 0) + (selectedInbound?.price.amount || 0);
+  }, [selectedOutbound, selectedInbound]);
+
+  async function callSearch(payload: any): Promise<SearchResponse> {
+    const r = await fetch('/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'Lỗi không xác định');
+    return j as SearchResponse;
+  }
 
   async function search() {
     setLoading(true);
     setError('');
     setResults([]);
+    setMeta(null);
+    setOutboundResults([]);
+    setInboundResults([]);
+    setSelectedOutbound(null);
+    setSelectedInbound(null);
+
     try {
-      const body = {
-        from,
-        to,
-        date,
-        returnDate: tripType === 'roundtrip' ? returnDate : undefined,
-        adults,
-        children,
-        infants,
-        cabin,
-        tripType,
-      };
-      const r = await fetch('/api/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error || 'Lỗi không xác định');
-      setResults(j.results || []);
-      setMeta(j.metadata || null);
+      const base = { adults, children, infants, cabin };
+
+      if (tripType === 'roundtrip' && returnDate) {
+        const [go, back] = await Promise.all([
+          callSearch({ ...base, from, to, date, tripType: 'oneway' }),
+          callSearch({ ...base, from: to, to: from, date: returnDate, tripType: 'oneway' }),
+        ]);
+
+        setOutboundResults(go.results || []);
+        setInboundResults(back.results || []);
+        setMeta({
+          totalResults: (go.results?.length || 0) + (back.results?.length || 0),
+          searchTime: Number((((go.metadata?.searchTime || 0) + (back.metadata?.searchTime || 0))).toFixed(1)),
+        });
+      } else {
+        const one = await callSearch({ ...base, from, to, date, tripType: 'oneway' });
+        setResults(one.results || []);
+        setMeta(one.metadata || null);
+      }
     } catch (e: any) {
       setError(e.message || 'Lỗi tìm kiếm');
     } finally {
@@ -124,23 +164,90 @@ export default function HomePage() {
           {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
           {meta && <p className="mt-2 text-sm text-slate-600">Kết quả: {meta.totalResults} chuyến · {meta.searchTime}s · Nguồn hiển thị: FlyClaw</p>}
 
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[900px] border-collapse">
-              <thead>
-                <tr>
-                  <th className="border-b p-2 text-left">Hãng</th>
-                  <th className="border-b p-2 text-left">Chuyến</th>
-                  <th className="border-b p-2 text-left">Giờ đi</th>
-                  <th className="border-b p-2 text-left">Giờ đến</th>
-                  <th className="border-b p-2 text-left">Dừng</th>
-                  <th className="border-b p-2 text-left">Giá</th>
-                  <th className="border-b p-2 text-left">Nguồn</th>
-                  <th className="border-b p-2 text-left">Chi tiết</th>
-                </tr>
-              </thead>
-              <tbody>
-                {results.map((f) => (
-                  <>
+          {tripType === 'roundtrip' && returnDate ? (
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              <div className="rounded-lg border bg-white">
+                <div className="border-b bg-[#ffe7b0] px-3 py-2 font-semibold">Đi: {from} ➜ {to} ({date})</div>
+                <div className="max-h-[420px] overflow-auto">
+                  {outboundResults.map((f) => (
+                    <div key={f.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-2 border-b px-3 py-2 text-sm">
+                      <div>
+                        <div className="font-semibold">{hhmm(f.departure.time)} - {hhmm(f.arrival.time)}</div>
+                        <div className="text-xs text-slate-600">{f.airline} {f.flightNumber} · {f.stops === 0 ? 'Bay thẳng' : `${f.stops} điểm dừng`}</div>
+                      </div>
+                      <div className="font-semibold">{fmt(f.price.amount)}</div>
+                      <button className="rounded bg-[#f4b21f] px-3 py-1 text-white" onClick={() => setSelectedOutbound(f)}>Chọn</button>
+                    </div>
+                  ))}
+                  {!loading && outboundResults.length === 0 && <div className="p-3 text-sm text-slate-500">Không có dữ liệu chiều đi.</div>}
+                </div>
+              </div>
+
+              <div className="rounded-lg border bg-white">
+                <div className="border-b bg-[#d8e9ff] px-3 py-2 font-semibold">Về: {to} ➜ {from} ({returnDate})</div>
+                <div className="max-h-[420px] overflow-auto">
+                  {inboundResults.map((f) => (
+                    <div key={f.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-2 border-b px-3 py-2 text-sm">
+                      <div>
+                        <div className="font-semibold">{hhmm(f.departure.time)} - {hhmm(f.arrival.time)}</div>
+                        <div className="text-xs text-slate-600">{f.airline} {f.flightNumber} · {f.stops === 0 ? 'Bay thẳng' : `${f.stops} điểm dừng`}</div>
+                      </div>
+                      <div className="font-semibold">{fmt(f.price.amount)}</div>
+                      <button className="rounded bg-[#1967d2] px-3 py-1 text-white" onClick={() => setSelectedInbound(f)}>Chọn</button>
+                    </div>
+                  ))}
+                  {!loading && inboundResults.length === 0 && <div className="p-3 text-sm text-slate-500">Không có dữ liệu chiều về.</div>}
+                </div>
+              </div>
+
+              {selectedOutbound && selectedInbound && (
+                <div className="md:col-span-2 rounded-lg border bg-[#f7f7f7] p-4">
+                  <div className="mb-3 text-lg font-bold">Chi tiết vé khứ hồi đã chọn</div>
+
+                  <div className="mb-2 grid grid-cols-[1fr_auto] gap-2 border-b pb-2">
+                    <div>
+                      <div className="font-semibold">{selectedOutbound.departure.city} ➜ {selectedOutbound.arrival.city}</div>
+                      <div className="text-sm">{selectedOutbound.airline} {selectedOutbound.flightNumber} · {hhmm(selectedOutbound.departure.time)} - {hhmm(selectedOutbound.arrival.time)}</div>
+                    </div>
+                    <div className="font-semibold">{fmt(selectedOutbound.price.amount)}</div>
+                  </div>
+
+                  <div className="mb-3 grid grid-cols-[1fr_auto] gap-2 border-b pb-2">
+                    <div>
+                      <div className="font-semibold">{selectedInbound.departure.city} ➜ {selectedInbound.arrival.city}</div>
+                      <div className="text-sm">{selectedInbound.airline} {selectedInbound.flightNumber} · {hhmm(selectedInbound.departure.time)} - {hhmm(selectedInbound.arrival.time)}</div>
+                    </div>
+                    <div className="font-semibold">{fmt(selectedInbound.price.amount)}</div>
+                  </div>
+
+                  <div className="grid grid-cols-[1fr_auto] gap-2 text-sm">
+                    <div>Vé người lớn x {adults}</div>
+                    <div>{fmt(totalRoundtrip * adults)}</div>
+                    <div>Thuế + phí (tham khảo)</div>
+                    <div>{fmt(Math.round(totalRoundtrip * adults * 0.12))}</div>
+                    <div className="text-base font-bold">Tổng giá vé</div>
+                    <div className="text-xl font-black text-red-600">{fmt(Math.round(totalRoundtrip * adults * 1.12))}</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full min-w-[900px] border-collapse">
+                <thead>
+                  <tr>
+                    <th className="border-b p-2 text-left">Hãng</th>
+                    <th className="border-b p-2 text-left">Chuyến</th>
+                    <th className="border-b p-2 text-left">Giờ đi</th>
+                    <th className="border-b p-2 text-left">Giờ đến</th>
+                    <th className="border-b p-2 text-left">Dừng</th>
+                    <th className="border-b p-2 text-left">Giá</th>
+                    <th className="border-b p-2 text-left">Nguồn</th>
+                    <th className="border-b p-2 text-left">Chi tiết</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {results.map((f) => (
                     <tr key={f.id}>
                       <td className="border-b p-2"><span className={`rounded-full px-2 py-1 text-xs font-semibold text-white ${airlineClass(f.airline)}`}>{f.airline}</span></td>
                       <td className="border-b p-2">{f.flightNumber}</td>
@@ -151,21 +258,22 @@ export default function HomePage() {
                       <td className="border-b p-2">flyclaw</td>
                       <td className="border-b p-2"><button className="rounded border px-2 py-1 text-xs" onClick={() => setDetail((s) => ({ ...s, [f.id]: !s[f.id] }))}>Xem</button></td>
                     </tr>
-                    {detail[f.id] && (
-                      <tr key={`${f.id}-d`}>
-                        <td colSpan={8} className="bg-[#fff8ec] p-2 text-sm">
-                          {f.departure.airport} ({f.departure.airportName}) → {f.arrival.airport} ({f.arrival.airportName}) · {Math.floor(f.duration / 60)}h {String(f.duration % 60).padStart(2, '0')}m
-                        </td>
-                      </tr>
-                    )}
-                  </>
-                ))}
-                {!loading && results.length === 0 && !error && (
-                  <tr><td colSpan={8} className="p-3 text-center text-slate-500">Không có dữ liệu</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ))}
+                  {!loading && results.length === 0 && !error && (
+                    <tr><td colSpan={8} className="p-3 text-center text-slate-500">Không có dữ liệu</td></tr>
+                  )}
+                </tbody>
+              </table>
+
+              {results.map((f) => (
+                detail[f.id] ? (
+                  <div key={`${f.id}-d`} className="border-b bg-[#fff8ec] p-2 text-sm">
+                    {f.departure.airport} ({f.departure.airportName}) ➜ {f.arrival.airport} ({f.arrival.airportName}) · {durationText(f.duration)}
+                  </div>
+                ) : null
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="mt-3 rounded-xl bg-gradient-to-r from-[#d6b77a] to-[#f2e4c7] p-3 text-sm">© 2026 TAN PHU APG</div>
@@ -173,4 +281,3 @@ export default function HomePage() {
     </main>
   );
 }
-
