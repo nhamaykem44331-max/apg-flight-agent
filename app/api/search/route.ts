@@ -10,7 +10,7 @@ export const runtime = 'nodejs';
 
 function toISO(v?: string) {
   if (!v) return '';
-  if (v.includes('T')) return v;
+  if (v.includes('T')) return `${v}+07:00`;
   return `${v}:00+07:00`;
 }
 
@@ -20,7 +20,30 @@ function airlineCode(name = '') {
   if (t.includes('vietjet')) return 'VJ';
   if (t.includes('bamboo')) return 'QH';
   if (t.includes('vietravel')) return 'VU';
+  if (t.includes('china southern')) return 'CZ';
+  if (t.includes('shenzhen')) return 'ZH';
   return (name.match(/\b[A-Z0-9]{2}\b/) || ['XX'])[0];
+}
+
+function normalizePrice(rawPrice: any, rawCurrency: string | undefined) {
+  const p = Number(rawPrice || 0);
+  const c = String(rawCurrency || '').toUpperCase();
+
+  // FlyClaw sometimes returns huge numeric values while marking USD.
+  // Heuristic: if marked USD but > 10,000 => likely already VND-like.
+  if (c === 'USD' && p > 10000) {
+    const vnd = Math.round(p);
+    return { amountVND: vnd, amountUSD: Math.round(vnd / 25000), normalizedCurrency: 'VND' as const };
+  }
+
+  if (c === 'USD') {
+    const usd = p;
+    const vnd = Math.round(usd * 25000);
+    return { amountVND: vnd, amountUSD: Number(usd.toFixed(2)), normalizedCurrency: 'USD' as const };
+  }
+
+  const vnd = Math.round(p);
+  return { amountVND: vnd, amountUSD: Math.round(vnd / 25000), normalizedCurrency: 'VND' as const };
 }
 
 export async function POST(req: NextRequest) {
@@ -59,8 +82,7 @@ export async function POST(req: NextRequest) {
     const results = raw.map((f: any) => {
       const fromMeta = AIRPORT_NAME_MAP[f.origin_iata] || { city: f.origin_iata, airportName: f.origin_iata };
       const toMeta = AIRPORT_NAME_MAP[f.destination_iata] || { city: f.destination_iata, airportName: f.destination_iata };
-      const amountVND = f.currency === 'USD' ? Math.round(Number(f.price || 0) * 25000) : Math.round(Number(f.price || 0));
-      const amountUSD = f.currency === 'USD' ? Number(f.price || 0) : Math.round(Number(f.price || 0) / 25000);
+      const priceNorm = normalizePrice(f.price, f.currency);
 
       return {
         id: uuidv4(),
@@ -82,14 +104,17 @@ export async function POST(req: NextRequest) {
         duration: Number(f.duration_minutes || 0),
         stops: Number(f.stops || 0),
         price: {
-          amount: amountVND,
+          amount: priceNorm.amountVND,
           currency: 'VND' as const,
-          source: f.source || 'flyclaw',
+          source: 'flyclaw',
         },
-        priceUSD: amountUSD,
-        sources: [f.source || 'flyclaw'],
+        priceUSD: priceNorm.amountUSD,
+        sources: ['flyclaw'],
+        upstreamSources: String(f.source || '').split(',').map((x: string) => x.trim()).filter(Boolean),
       };
-    });
+    })
+    .filter((x: any) => x.price.amount > 0)
+    .sort((a: any, b: any) => a.price.amount - b.price.amount);
 
     const payload: SearchResponse = {
       searchId: uuidv4(),
