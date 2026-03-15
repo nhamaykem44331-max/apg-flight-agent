@@ -167,11 +167,11 @@ export default function HomePage() {
 
           {tripType === 'roundtrip' ? (
             <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <div className="rounded-lg border bg-white">
+              <div className="rounded-xl border bg-white shadow-sm">
                 <div className="border-b bg-[#ffe7b0] px-3 py-2 font-semibold">Đi: {from} ➜ {to} ({date})</div>
                 <div className="max-h-[420px] overflow-auto">
                   {outboundResults.map((f) => (
-                    <div key={f.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-2 border-b px-3 py-2 text-sm">
+                    <div key={f.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b px-3 py-2 text-sm hover:bg-slate-50">
                       <div>
                         <div className="font-semibold">{hhmm(f.departure.time)} - {hhmm(f.arrival.time)}</div>
                         <div className="text-xs text-slate-600">{f.airline} {f.flightNumber} · {f.stops === 0 ? 'Bay thẳng' : `${f.stops} điểm dừng`}</div>
@@ -184,11 +184,11 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="rounded-lg border bg-white">
+              <div className="rounded-xl border bg-white shadow-sm">
                 <div className="border-b bg-[#d8e9ff] px-3 py-2 font-semibold">Về: {to} ➜ {from} ({returnDate})</div>
                 <div className="max-h-[420px] overflow-auto">
                   {inboundResults.map((f) => (
-                    <div key={f.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-2 border-b px-3 py-2 text-sm">
+                    <div key={f.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b px-3 py-2 text-sm hover:bg-slate-50">
                       <div>
                         <div className="font-semibold">{hhmm(f.departure.time)} - {hhmm(f.arrival.time)}</div>
                         <div className="text-xs text-slate-600">{f.airline} {f.flightNumber} · {f.stops === 0 ? 'Bay thẳng' : `${f.stops} điểm dừng`}</div>
@@ -203,7 +203,7 @@ export default function HomePage() {
 
               {selectedOutbound && selectedInbound && (
                 <div className="md:col-span-2 rounded-lg border bg-[#f7f7f7] p-4">
-                  <div className="mb-3 text-lg font-bold">Chi tiết vé khứ hồi đã chọn</div>
+                  <div className="mb-3 text-lg font-bold">Chi tiết giờ bay & tổng giá vé khứ hồi</div>
 
                   <div className="mb-2 grid grid-cols-[1fr_auto] gap-2 border-b pb-2">
                     <div>
@@ -282,4 +282,6 @@ export default function HomePage() {
     </main>
   );
 }
+
+
 
