@@ -72,10 +72,25 @@ export default function HomePage() {
   const [inboundResults, setInboundResults] = useState<Flight[]>([]);
   const [selectedOutbound, setSelectedOutbound] = useState<Flight | null>(null);
   const [selectedInbound, setSelectedInbound] = useState<Flight | null>(null);
+  const [sortMode, setSortMode] = useState<'price' | 'time'>('price');
 
   const totalRoundtrip = useMemo(() => {
     return (selectedOutbound?.price.amount || 0) + (selectedInbound?.price.amount || 0);
   }, [selectedOutbound, selectedInbound]);
+
+  const sortedOutbound = useMemo(() => {
+    const arr = [...outboundResults];
+    if (sortMode === 'price') arr.sort((a, b) => a.price.amount - b.price.amount);
+    else arr.sort((a, b) => +new Date(a.departure.time) - +new Date(b.departure.time));
+    return arr;
+  }, [outboundResults, sortMode]);
+
+  const sortedInbound = useMemo(() => {
+    const arr = [...inboundResults];
+    if (sortMode === 'price') arr.sort((a, b) => a.price.amount - b.price.amount);
+    else arr.sort((a, b) => +new Date(a.departure.time) - +new Date(b.departure.time));
+    return arr;
+  }, [inboundResults, sortMode]);
 
   function goQuote(outbound: Flight, inbound: Flight) {
     const payload = {
@@ -193,75 +208,85 @@ export default function HomePage() {
           {meta && <p className="mt-2 text-sm text-slate-600">Kết quả: {meta.totalResults} chuyến · {meta.searchTime}s · Nguồn hiển thị: FlyClaw</p>}
 
           {tripType === 'roundtrip' ? (
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <div className="rounded-xl border bg-white shadow-sm">
-                <div className="border-b bg-[#f7b500] px-3 py-2 font-semibold text-white">Đi: {from} ➜ {to} ({date})</div>
-                <div className="max-h-[420px] overflow-auto">
-                  {outboundResults.map((f) => (
-                    <div key={f.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b px-3 py-2 text-sm hover:bg-slate-50">
-                      <div>
-                        <div className="font-semibold">{hhmm(f.departure.time)} - {hhmm(f.arrival.time)}</div>
-                        <div className="text-xs text-slate-600">{f.airline} {f.flightNumber} · {f.stops === 0 ? 'Bay thẳng' : `${f.stops} điểm dừng`}</div>
-                      </div>
-                      <div className="font-semibold">{fmt(f.price.amount)}</div>
-                      <button className={`rounded px-3 py-1 text-white ${selectedOutbound?.id===f.id?"bg-green-600":"bg-[#f4b21f]"}`} onClick={() => onSelectOutbound(f)}>{selectedOutbound?.id===f.id?"Đã chọn":"Chọn"}</button>
-                    </div>
-                  ))}
-                  {!loading && outboundResults.length === 0 && <div className="p-3 text-sm text-slate-500">Không có dữ liệu chiều đi.</div>}
+            <>
+              <div className="mt-4 rounded-lg border bg-white p-3">
+                <div className="flex items-center gap-6 text-sm">
+                  <span className="font-semibold">Sắp xếp:</span>
+                  <label className="flex items-center gap-2"><input type="radio" checked={sortMode==='price'} onChange={() => setSortMode('price')} /> Giá</label>
+                  <label className="flex items-center gap-2"><input type="radio" checked={sortMode==='time'} onChange={() => setSortMode('time')} /> Giờ bay</label>
                 </div>
               </div>
 
-              <div className="rounded-xl border bg-white shadow-sm">
-                <div className="border-b bg-[#1570ef] px-3 py-2 font-semibold text-white">Về: {to} ➜ {from} ({returnDate || toYmd(10)})</div>
-                <div className="max-h-[420px] overflow-auto">
-                  {inboundResults.map((f) => (
-                    <div key={f.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b px-3 py-2 text-sm hover:bg-slate-50">
-                      <div>
-                        <div className="font-semibold">{hhmm(f.departure.time)} - {hhmm(f.arrival.time)}</div>
-                        <div className="text-xs text-slate-600">{f.airline} {f.flightNumber} · {f.stops === 0 ? 'Bay thẳng' : `${f.stops} điểm dừng`}</div>
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <div className="rounded-xl border bg-white shadow-sm">
+                  <div className="border-b bg-[#f7b500] px-3 py-2 font-semibold text-white">Đi: {from} ➜ {to} ({date})</div>
+                  <div className="max-h-[420px] overflow-auto">
+                    {sortedOutbound.map((f) => (
+                      <div key={f.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b px-3 py-2 text-sm hover:bg-slate-50">
+                        <div>
+                          <div className="font-semibold">{hhmm(f.departure.time)} - {hhmm(f.arrival.time)}</div>
+                          <div className="text-xs text-slate-600">{f.airline} {f.flightNumber} · {f.stops === 0 ? 'Bay thẳng' : `${f.stops} điểm dừng`}</div>
+                        </div>
+                        <div className="font-semibold">{fmt(f.price.amount)}</div>
+                        <button className={`rounded px-3 py-1 text-white ${selectedOutbound?.id===f.id?"bg-green-600":"bg-[#f4b21f]"}`} onClick={() => onSelectOutbound(f)}>{selectedOutbound?.id===f.id?"Đã chọn":"Chọn"}</button>
                       </div>
-                      <div className="font-semibold">{fmt(f.price.amount)}</div>
-                      <button className={`rounded px-3 py-1 text-white ${selectedInbound?.id===f.id?"bg-green-600":"bg-[#1967d2]"}`} onClick={() => onSelectInbound(f)}>{selectedInbound?.id===f.id?"Đã chọn":"Chọn"}</button>
-                    </div>
-                  ))}
-                  {!loading && inboundResults.length === 0 && <div className="p-3 text-sm text-slate-500">Không có dữ liệu chiều về.</div>}
+                    ))}
+                    {!loading && sortedOutbound.length === 0 && <div className="p-3 text-sm text-slate-500">Không có dữ liệu chiều đi.</div>}
+                  </div>
                 </div>
+
+                <div className="rounded-xl border bg-white shadow-sm">
+                  <div className="border-b bg-[#1570ef] px-3 py-2 font-semibold text-white">Về: {to} ➜ {from} ({returnDate || toYmd(10)})</div>
+                  <div className="max-h-[420px] overflow-auto">
+                    {sortedInbound.map((f) => (
+                      <div key={f.id} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b px-3 py-2 text-sm hover:bg-slate-50">
+                        <div>
+                          <div className="font-semibold">{hhmm(f.departure.time)} - {hhmm(f.arrival.time)}</div>
+                          <div className="text-xs text-slate-600">{f.airline} {f.flightNumber} · {f.stops === 0 ? 'Bay thẳng' : `${f.stops} điểm dừng`}</div>
+                        </div>
+                        <div className="font-semibold">{fmt(f.price.amount)}</div>
+                        <button className={`rounded px-3 py-1 text-white ${selectedInbound?.id===f.id?"bg-green-600":"bg-[#1967d2]"}`} onClick={() => onSelectInbound(f)}>{selectedInbound?.id===f.id?"Đã chọn":"Chọn"}</button>
+                      </div>
+                    ))}
+                    {!loading && sortedInbound.length === 0 && <div className="p-3 text-sm text-slate-500">Không có dữ liệu chiều về.</div>}
+                  </div>
+                </div>
+
+                {selectedOutbound && selectedInbound && (
+                  <div className="md:col-span-2 rounded-lg border bg-[#f7f7f7] p-4">
+                    <div className="mb-3 text-lg font-bold">Chi tiết giờ bay & tổng giá vé khứ hồi</div>
+                    <div className="mb-2 grid grid-cols-[1fr_auto] gap-2 border-b pb-2">
+                      <div>
+                        <div className="font-semibold">{selectedOutbound.departure.city} ➜ {selectedOutbound.arrival.city}</div>
+                        <div className="text-sm">{selectedOutbound.airline} {selectedOutbound.flightNumber} · {hhmm(selectedOutbound.departure.time)} - {hhmm(selectedOutbound.arrival.time)}</div>
+                      </div>
+                      <div className="font-semibold">{fmt(selectedOutbound.price.amount)}</div>
+                    </div>
+
+                    <div className="mb-3 grid grid-cols-[1fr_auto] gap-2 border-b pb-2">
+                      <div>
+                        <div className="font-semibold">{selectedInbound.departure.city} ➜ {selectedInbound.arrival.city}</div>
+                        <div className="text-sm">{selectedInbound.airline} {selectedInbound.flightNumber} · {hhmm(selectedInbound.departure.time)} - {hhmm(selectedInbound.arrival.time)}</div>
+                      </div>
+                      <div className="font-semibold">{fmt(selectedInbound.price.amount)}</div>
+                    </div>
+
+                    <div className="grid grid-cols-[1fr_auto] gap-2 text-sm">
+                      <div>Vé người lớn x {adults}</div>
+                      <div>{fmt(totalRoundtrip * adults)}</div>
+                      <div>Thuế + phí (tham khảo)</div>
+                      <div>{fmt(Math.round(totalRoundtrip * adults * 0.12))}</div>
+                      <div className="text-base font-bold">Tổng giá vé</div>
+                      <div className="text-xl font-black text-red-600">{fmt(Math.round(totalRoundtrip * adults * 1.12))}</div>
+                    </div>
+
+                    <button className="mt-4 rounded bg-[#d12d2d] px-4 py-2 font-semibold text-white" onClick={() => goQuote(selectedOutbound, selectedInbound)}>
+                      Sang trang báo giá tổng hợp
+                    </button>
+                  </div>
+                )}
               </div>
-
-              {selectedOutbound && selectedInbound && (
-                <div className="md:col-span-2 rounded-lg border bg-[#f7f7f7] p-4">
-                  <div className="mb-3 text-lg font-bold">Chi tiết giờ bay & tổng giá vé khứ hồi</div>
-                  <div className="mb-2 grid grid-cols-[1fr_auto] gap-2 border-b pb-2">
-                    <div>
-                      <div className="font-semibold">{selectedOutbound.departure.city} ➜ {selectedOutbound.arrival.city}</div>
-                      <div className="text-sm">{selectedOutbound.airline} {selectedOutbound.flightNumber} · {hhmm(selectedOutbound.departure.time)} - {hhmm(selectedOutbound.arrival.time)}</div>
-                    </div>
-                    <div className="font-semibold">{fmt(selectedOutbound.price.amount)}</div>
-                  </div>
-
-                  <div className="mb-3 grid grid-cols-[1fr_auto] gap-2 border-b pb-2">
-                    <div>
-                      <div className="font-semibold">{selectedInbound.departure.city} ➜ {selectedInbound.arrival.city}</div>
-                      <div className="text-sm">{selectedInbound.airline} {selectedInbound.flightNumber} · {hhmm(selectedInbound.departure.time)} - {hhmm(selectedInbound.arrival.time)}</div>
-                    </div>
-                    <div className="font-semibold">{fmt(selectedInbound.price.amount)}</div>
-                  </div>
-
-                  <div className="grid grid-cols-[1fr_auto] gap-2 text-sm">
-                    <div>Vé người lớn x {adults}</div>
-                    <div>{fmt(totalRoundtrip * adults)}</div>
-                    <div>Thuế + phí (tham khảo)</div>
-                    <div>{fmt(Math.round(totalRoundtrip * adults * 0.12))}</div>
-                    <div className="text-base font-bold">Tổng giá vé</div>
-                    <div className="text-xl font-black text-red-600">{fmt(Math.round(totalRoundtrip * adults * 1.12))}</div>
-                  </div>
-
-                  <button className="mt-4 rounded bg-[#d12d2d] px-4 py-2 font-semibold text-white" onClick={() => goQuote(selectedOutbound, selectedInbound)}>
-                    Sang trang báo giá tổng hợp
-                  </button>
-                </div>
-              )}
-            </div>
+            </>
           ) : (
             <div className="mt-4 overflow-x-auto">
               <table className="w-full min-w-[900px] border-collapse">
