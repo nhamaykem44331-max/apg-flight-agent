@@ -92,7 +92,7 @@ export default function HomePage() {
         </div>
 
         <div className="rounded-xl bg-[#fffaf1] p-4 shadow">
-          <h1 className="mb-3 text-xl font-bold">✈️ APG Flight Agent</h1>
+          <h1 className="mb-3 text-xl font-bold">✈️ APG Flight Agent (Classic UI v2)</h1>
 
           <div className="mb-3 flex gap-2">
             <button className={`rounded-full px-3 py-1 ${tripType === 'oneway' ? 'bg-[#c8a96b] font-semibold' : 'border bg-white'}`} onClick={() => setTripType('oneway')}>Một chiều</button>
@@ -173,3 +173,4 @@ export default function HomePage() {
     </main>
   );
 }
+
