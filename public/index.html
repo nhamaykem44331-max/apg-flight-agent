@@ -17,7 +17,7 @@
     .card{background:#fffaf1;border-radius:12px;padding:16px;box-shadow:0 6px 20px rgba(122,92,45,.12)}
     .row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
     input,button{padding:10px;border-radius:8px;border:1px solid #d1d5db;font-size:14px}
-    button{background:#c8a96b;color:#3f3122;border:0;cursor:pointer}
+    button{background:#c8a96b;color:#3f3122;border:0;cursor:pointer;font-weight:600}
     table{width:100%;border-collapse:collapse;margin-top:14px}
     th,td{padding:9px;border-bottom:1px solid #e5e7eb;text-align:left;vertical-align:top}
     .airline-pill{display:inline-block;padding:6px 10px;border-radius:999px;color:#fff;font-weight:700;font-size:12px;line-height:1}
@@ -35,7 +35,12 @@
 </head>
 <body>
 <div class="page">
-  <div class="brand"><div class="left"><img class="logo" src="./assets/tanphu-apg-logo.jpg" alt="Tan Phu APG Logo" /><div><div class="title">TAN PHU APG</div><div class="sub">AIRLINES AGENT • APG Flight Agent</div></div></div></div>
+  <div class="brand">
+    <div class="left">
+      <img class="logo" src="./assets/tanphu-apg-logo.jpg" alt="Tan Phu APG Logo" />
+      <div><div class="title">TAN PHU APG</div><div class="sub">AIRLINES AGENT • APG Flight Agent</div></div>
+    </div>
+  </div>
 
   <div class="card">
     <h2 style="margin-top:0">✈️ APG Flight Agent</h2>
@@ -47,7 +52,7 @@
       <button onclick="loadLive()">Tìm chuyến bay</button>
     </div>
 
-    <p class="muted">Mặc định 1 chiều. Nếu có cả ngày về => hệ thống tự chuyển sang khứ hồi.</p>
+    <p class="muted">Mặc định 1 chiều. Nếu có cả ngày về thì hệ thống tự chuyển sang khứ hồi.</p>
     <div id="status" class="muted"></div>
     <div id="error" class="err"></div>
 
@@ -57,109 +62,121 @@
     </table>
   </div>
 
-  <div class="footer"><div class="left"><img class="logo-sm" src="./assets/tanphu-apg-logo.jpg" alt="Tan Phu APG Logo" /><div style="font-size:13px">TAN PHU APG • Airlines Agent<br/>Hotline : 0944513866</div></div><div style="font-size:12px">© 2026 TAN PHU APG</div></div>
+  <div class="footer">
+    <div class="left"><img class="logo-sm" src="./assets/tanphu-apg-logo.jpg" alt="Tan Phu APG Logo" /><div style="font-size:13px">TAN PHU APG • Airlines Agent</div></div>
+    <div style="font-size:12px">© 2026 TAN PHU APG</div>
+  </div>
 </div>
 
 <script>
-  const d = new Date(); d.setDate(d.getDate()+1); document.getElementById('date').value = d.toISOString().slice(0,10);
-  function fmt(v,currency='VND'){ const n=Number(v||0).toLocaleString('vi-VN'); if(currency==='USD') return '
-  function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]))}
-  function airlineClass(name=''){ const n=name.toLowerCase(); if(n.includes('vietnam airlines')) return 'air-vn'; if(n.includes('vietjet')) return 'air-vj'; if(n.includes('bamboo')) return 'air-qh'; if(n.includes('vietravel')) return 'air-vu'; if(n.includes('shenzhen')) return 'air-zh'; return 'air-default'; }
-  function toggleDetail(i){ const tr=document.getElementById(`detail-${i}`); if(!tr) return; tr.style.display = tr.style.display==='none'?'table-row':'none'; }
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  document.getElementById('date').value = d.toISOString().slice(0,10);
+
+  function fmt(v, currency='VND'){
+    const n = Number(v || 0).toLocaleString('vi-VN');
+    return currency === 'USD' ? ('$' + n) : (n + ' ₫');
+  }
+
+  function esc(s=''){
+    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  function airlineClass(name=''){
+    const n = name.toLowerCase();
+    if(n.includes('vietnam airlines')) return 'air-vn';
+    if(n.includes('vietjet')) return 'air-vj';
+    if(n.includes('bamboo')) return 'air-qh';
+    if(n.includes('vietravel')) return 'air-vu';
+    if(n.includes('shenzhen')) return 'air-zh';
+    return 'air-default';
+  }
+
+  function toggleDetail(i){
+    const tr = document.getElementById('detail-' + i);
+    if(!tr) return;
+    tr.style.display = tr.style.display === 'none' ? 'table-row' : 'none';
+  }
 
   function detailHtml(f){
     const segSource = (f.segments && f.segments.length) ? f.segments : (f.raw_flights || []);
-    const segs = segSource.map((s,idx)=>{
-      const isMapped=!!s.from;
-      const from = isMapped ? s.from : (s.departure_airport?.id || '');
-      const fromCity = isMapped ? s.from_city : (s.departure_airport?.name || '');
-      const to = isMapped ? s.to : (s.arrival_airport?.id || '');
-      const toCity = isMapped ? s.to_city : (s.arrival_airport?.name || '');
-      const depTime = isMapped ? s.departure_time : (s.departure_airport?.time || '');
-      const arrTime = isMapped ? s.arrival_time : (s.arrival_airport?.time || '');
-      const durationText = isMapped ? (s.duration_text || '') : (s.duration ? `${Math.floor(s.duration/60)}h ${String(s.duration%60).padStart(2,'0')}m` : '');
-      const lay = (f.layovers||[])[idx];
-      return `<div class="seg"><div><b>Chặng ${idx+1}:</b> ${esc(s.airline||'')} ${esc(s.flight_number||'')}</div><div>${esc(from)} (${esc(fromCity)}) → ${esc(to)} (${esc(toCity)})</div><div>Giờ bay: ${esc(depTime)} → ${esc(arrTime)} ${durationText?`| ${esc(durationText)}`:''}</div>${lay?`<div class="lay">Chờ nối chuyến tại ${esc(lay.airport||lay.id||'')} ${lay.duration_text?`- ${esc(lay.duration_text)}`:''}</div>`:''}</div>`;
-    }).join('');
-    if (segs) return `<div class="detail-box"><div class="detail-title">Thông tin nối chuyến & thời gian chờ</div>${segs}</div>`;
-    return '<div class="detail-box">Không có dữ liệu nối chuyến chi tiết cho hành trình này.</div>';
+    if(!segSource.length){
+      return '<div class="detail-box">Không có dữ liệu nối chuyến chi tiết cho hành trình này.</div>';
+    }
+
+    let html = '<div class="detail-box"><div class="detail-title">Thông tin nối chuyến & thời gian chờ</div>';
+    segSource.forEach((s, idx) => {
+      const isMapped = !!s.from;
+      const airline = isMapped ? (s.airline || '') : (s.airline || '');
+      const flightNo = isMapped ? (s.flight_number || '') : (s.flight_number || '');
+      const from = isMapped ? (s.from || '') : ((s.departure_airport && s.departure_airport.id) || '');
+      const fromCity = isMapped ? (s.from_city || from) : ((s.departure_airport && s.departure_airport.name) || from);
+      const to = isMapped ? (s.to || '') : ((s.arrival_airport && s.arrival_airport.id) || '');
+      const toCity = isMapped ? (s.to_city || to) : ((s.arrival_airport && s.arrival_airport.name) || to);
+      const depTime = isMapped ? (s.departure_time || '') : ((s.departure_airport && s.departure_airport.time) || '');
+      const arrTime = isMapped ? (s.arrival_time || '') : ((s.arrival_airport && s.arrival_airport.time) || '');
+      const durationText = isMapped
+        ? (s.duration_text || '')
+        : (s.duration ? (Math.floor(s.duration/60) + 'h ' + String(s.duration%60).padStart(2,'0') + 'm') : '');
+
+      html += '<div class="seg">'
+        + '<div><b>Chặng ' + (idx+1) + ':</b> ' + esc(airline) + ' ' + esc(flightNo) + '</div>'
+        + '<div>' + esc(from) + ' (' + esc(fromCity) + ') → ' + esc(to) + ' (' + esc(toCity) + ')</div>'
+        + '<div>Giờ bay: ' + esc(depTime) + ' → ' + esc(arrTime) + (durationText ? (' | ' + esc(durationText)) : '') + '</div>';
+
+      const lay = (f.layovers || [])[idx];
+      if(lay){
+        html += '<div class="lay">Chờ nối chuyến tại ' + esc(lay.airport || lay.id || '') + (lay.duration_text ? (' - ' + esc(lay.duration_text)) : '') + '</div>';
+      }
+
+      html += '</div>';
+    });
+    html += '</div>';
+    return html;
   }
 
   async function loadLive(){
-    const from=document.getElementById('from').value.trim().toUpperCase();
-    const to=document.getElementById('to').value.trim().toUpperCase();
-    const date=document.getElementById('date').value;
-    const returnDate=document.getElementById('returnDate').value;
-    document.getElementById('error').textContent='';
-    document.getElementById('status').textContent='Đang tải dữ liệu live...';
-    document.getElementById('tb').innerHTML='';
+    const from = document.getElementById('from').value.trim().toUpperCase();
+    const to = document.getElementById('to').value.trim().toUpperCase();
+    const date = document.getElementById('date').value;
+    const returnDate = document.getElementById('returnDate').value;
+
+    document.getElementById('error').textContent = '';
+    document.getElementById('status').textContent = 'Đang tải dữ liệu live...';
+    document.getElementById('tb').innerHTML = '';
 
     try{
       const qs = new URLSearchParams({ from, to, date });
       if(returnDate) qs.set('returnDate', returnDate);
-      const r = await fetch(`/api/flights/live?${qs.toString()}`);
+
+      const r = await fetch('/api/flights/live?' + qs.toString());
       const data = await r.json();
       if(!r.ok) throw new Error(data.error || 'Lỗi không xác định');
 
-      document.getElementById('status').textContent = `Nguồn: ${data.source} | Loại vé: ${data.tripType==='roundtrip'?'Khứ hồi':'Một chiều'} | Tổng chuyến: ${data.count}`;
-      const rows = (data.flights||[]).slice(0,20).map((f,i)=>`<tr><td><span class="airline-pill ${airlineClass(f.airline)}">${esc(f.airline)}</span></td><td>${esc(f.flight_number||'')}</td><td>${esc(f.departure_time||'')}</td><td>${esc(f.arrival_time||'')}</td><td>${f.stops}</td><td></td><td><button class="btn-detail" onclick="toggleDetail(${i})">Xem nối chuyến</button></td></tr><tr id="detail-${i}" class="detail-row" style="display:none"><td colspan="7">${detailHtml(f)}</td></tr>`).join('');
+      document.getElementById('status').textContent = 'Nguồn: ' + data.source
+        + ' | Loại vé: ' + (data.tripType === 'roundtrip' ? 'Khứ hồi' : 'Một chiều')
+        + ' | Tổng chuyến: ' + data.count;
+
+      const rows = (data.flights || []).slice(0, 30).map((f, i) => {
+        return '<tr>'
+          + '<td><span class="airline-pill ' + airlineClass(f.airline) + '">' + esc(f.airline) + '</span></td>'
+          + '<td>' + esc(f.flight_number || '') + '</td>'
+          + '<td>' + esc(f.departure_time || '') + '</td>'
+          + '<td>' + esc(f.arrival_time || '') + '</td>'
+          + '<td>' + esc(f.stops) + '</td>'
+          + '<td>' + fmt(f.price, f.price_currency) + '</td>'
+          + '<td><button class="btn-detail" onclick="toggleDetail(' + i + ')">Xem nối chuyến</button></td>'
+          + '</tr>'
+          + '<tr id="detail-' + i + '" class="detail-row" style="display:none"><td colspan="7">' + detailHtml(f) + '</td></tr>';
+      }).join('');
+
       document.getElementById('tb').innerHTML = rows || '<tr><td colspan="7">Không có dữ liệu</td></tr>';
     }catch(e){
-      document.getElementById('status').textContent='';
-      document.getElementById('error').textContent=e.message;
+      document.getElementById('status').textContent = '';
+      document.getElementById('error').textContent = e.message;
+      document.getElementById('tb').innerHTML = '<tr><td colspan="7">Không thể tải dữ liệu chuyến bay.</td></tr>';
     }
   }
 </script>
 </body>
 </html>
-+n; return n+' ₫'; }
-  function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]))}
-  function airlineClass(name=''){ const n=name.toLowerCase(); if(n.includes('vietnam airlines')) return 'air-vn'; if(n.includes('vietjet')) return 'air-vj'; if(n.includes('bamboo')) return 'air-qh'; if(n.includes('vietravel')) return 'air-vu'; if(n.includes('shenzhen')) return 'air-zh'; return 'air-default'; }
-  function toggleDetail(i){ const tr=document.getElementById(`detail-${i}`); if(!tr) return; tr.style.display = tr.style.display==='none'?'table-row':'none'; }
-
-  function detailHtml(f){
-    const segSource = (f.segments && f.segments.length) ? f.segments : (f.raw_flights || []);
-    const segs = segSource.map((s,idx)=>{
-      const isMapped=!!s.from;
-      const from = isMapped ? s.from : (s.departure_airport?.id || '');
-      const fromCity = isMapped ? s.from_city : (s.departure_airport?.name || '');
-      const to = isMapped ? s.to : (s.arrival_airport?.id || '');
-      const toCity = isMapped ? s.to_city : (s.arrival_airport?.name || '');
-      const depTime = isMapped ? s.departure_time : (s.departure_airport?.time || '');
-      const arrTime = isMapped ? s.arrival_time : (s.arrival_airport?.time || '');
-      const durationText = isMapped ? (s.duration_text || '') : (s.duration ? `${Math.floor(s.duration/60)}h ${String(s.duration%60).padStart(2,'0')}m` : '');
-      const lay = (f.layovers||[])[idx];
-      return `<div class="seg"><div><b>Chặng ${idx+1}:</b> ${esc(s.airline||'')} ${esc(s.flight_number||'')}</div><div>${esc(from)} (${esc(fromCity)}) → ${esc(to)} (${esc(toCity)})</div><div>Giờ bay: ${esc(depTime)} → ${esc(arrTime)} ${durationText?`| ${esc(durationText)}`:''}</div>${lay?`<div class="lay">Chờ nối chuyến tại ${esc(lay.airport||lay.id||'')} ${lay.duration_text?`- ${esc(lay.duration_text)}`:''}</div>`:''}</div>`;
-    }).join('');
-    if (segs) return `<div class="detail-box"><div class="detail-title">Thông tin nối chuyến & thời gian chờ</div>${segs}</div>`;
-    return '<div class="detail-box">Không có dữ liệu nối chuyến chi tiết cho hành trình này.</div>';
-  }
-
-  async function loadLive(){
-    const from=document.getElementById('from').value.trim().toUpperCase();
-    const to=document.getElementById('to').value.trim().toUpperCase();
-    const date=document.getElementById('date').value;
-    const returnDate=document.getElementById('returnDate').value;
-    document.getElementById('error').textContent='';
-    document.getElementById('status').textContent='Đang tải dữ liệu live...';
-    document.getElementById('tb').innerHTML='';
-
-    try{
-      const qs = new URLSearchParams({ from, to, date });
-      if(returnDate) qs.set('returnDate', returnDate);
-      const r = await fetch(`/api/flights/live?${qs.toString()}`);
-      const data = await r.json();
-      if(!r.ok) throw new Error(data.error || 'Lỗi không xác định');
-
-      document.getElementById('status').textContent = `Nguồn: ${data.source} | Loại vé: ${data.tripType==='roundtrip'?'Khứ hồi':'Một chiều'} | Tổng chuyến: ${data.count}`;
-      const rows = (data.flights||[]).slice(0,20).map((f,i)=>`<tr><td><span class="airline-pill ${airlineClass(f.airline)}">${esc(f.airline)}</span></td><td>${esc(f.flight_number||'')}</td><td>${esc(f.departure_time||'')}</td><td>${esc(f.arrival_time||'')}</td><td>${f.stops}</td><td></td><td><button class="btn-detail" onclick="toggleDetail(${i})">Xem nối chuyến</button></td></tr><tr id="detail-${i}" class="detail-row" style="display:none"><td colspan="7">${detailHtml(f)}</td></tr>`).join('');
-      document.getElementById('tb').innerHTML = rows || '<tr><td colspan="7">Không có dữ liệu</td></tr>';
-    }catch(e){
-      document.getElementById('status').textContent='';
-      document.getElementById('error').textContent=e.message;
-    }
-  }
-</script>
-</body>
-</html>
-
